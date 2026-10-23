@@ -1,0 +1,65 @@
+# Dev overrides: hot reload, volume mounts, relaxed settings
+# Этот файл подхватывается автоматически при `docker-compose up`
+
+services:
+
+  frontend:
+    image: node:20-alpine
+    working_dir: /app
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0 --port 3000"
+    environment:
+      VITE_API_V1_PROXY_TARGET: http://backend:8080
+      VITE_API_PROXY_TARGET: http://backend:8080
+    volumes:
+      - ./frontend:/app
+    ports:
+      - "3000:3000"
+    mem_limit: 768m
+    cpus: "1.00"
+    depends_on:
+      - math-engine
+
+  math-engine:
+    volumes:
+      - ./math-engine:/app/math-engine
+      - ./dmc_ai:/app/dmc_ai
+    ports:
+      - "8081:8081"
+    environment:
+      DMC_BACKEND_URL: http://backend:8080
+    mem_limit: 1024m
+    cpus: "1.50"
+
+  backend:
+    environment:
+      SPRING_DEVTOOLS_RESTART_ENABLED: "true"
+    ports:
+      - "8080:8080"
+    mem_limit: 1024m
+    cpus: "1.50"
+
+  postgres:
+    ports:
+      - "5432:5432"
+    mem_limit: 1024m
+    cpus: "1.00"
+
+  redis:
+    ports:
+      - "6379:6379"
+    mem_limit: 512m
+    cpus: "0.50"
+
+  rabbitmq:
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    mem_limit: 768m
+    cpus: "1.00"
+
+  nginx:
+    volumes:
+      - ./frontend:/usr/share/nginx/html:ro
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d:ro
+    mem_limit: 256m
+    cpus: "0.50"
